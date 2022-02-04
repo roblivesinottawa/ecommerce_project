@@ -1,3 +1,4 @@
+from faulthandler import cancel_dump_traceback_later
 import mysql.connector
 from mysql.connector import connect, Error
 
@@ -44,8 +45,81 @@ class MavenFuzzyFactory:
             conn.close()
         except Error as e:
             print(e)
+    
+    def get_utm_content(self):
+        '''gets the utm_content and sessions'''
+        try:
+            conn = self.make_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+            SELECT 
+                ws.utm_content, 
+                COUNT(DISTINCT ws.website_session_id) AS sessions ,
+                COUNT(DISTINCT o.order_id) AS orders,
+                COUNT(DISTINCT o.order_id) / COUNT(DISTINCT ws.website_session_id) AS session_to_order_conv_rt
+            FROM website_sessions ws
+                LEFT JOIN orders o 
+                    ON o.website_session_id = ws.website_session_id
+            WHERE ws.website_session_id BETWEEN 1000 AND 2000 
+            GROUP BY 1 
+            ORDER BY 2 DESC;''')
+            [print(row) for row in cursor]
+            cursor.close()
+            conn.close()
+        except Error as e:
+            print(e)
 
+    def site_traffic_breakdown(self):
+        '''displays a breakdown of site traffic by utm source, campaign, and referring domain'''
+        try:
+            conn = self.make_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+            SELECT
+                utm_source, utm_campaign, http_referer,
+                COUNT(DISTINCT website_session_id) AS sessions
+            FROM website_sessions
+            WHERE created_at < '2012-04-12'
+            GROUP BY 1, 2, 3
+            ORDER BY 4 DESC;
+
+          ''')
+            [print(row) for row in cursor]
+            cursor.close()
+            conn.close()
+        except Error as e:
+            print(e)
+
+
+    def calculate_conversion_rate(self):
+        '''displays a breakdown of site traffic by utm source, campaign, and referring domain'''
+        try:
+            conn = self.make_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+            select 
+                count(distinct ws.website_session_id) AS sessions, 
+                count(distinct o.order_id) as orders,
+                count(distinct ws.website_session_id) / count(distinct o.order_id) as session_to_order_conv_rt
+            from 
+                website_sessions ws
+            left join 
+                orders o 
+            on 
+                o.website_session_id = ws.website_session_id 
+            where ws.created_at < '2012-04-14' 
+            and utm_source = 'gsearch' 
+            and utm_campaign = 'nonbrand';
+
+          ''')
+            [print(row) for row in cursor]
+            cursor.close()
+            conn.close()
+        except Error as e:
+            print(e)
 
 maven = MavenFuzzyFactory('root', 'mysqlpassmacrob', 'localhost', 'mavenfuzzyfactory')
 # print(maven.show_database())
-print(maven.show_all_tables())
+# print(maven.show_all_tables())
+# print(maven.get_utm_content())
+print(maven.calculate_conversion_rate())
