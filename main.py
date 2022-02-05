@@ -118,7 +118,7 @@ class MavenFuzzyFactory:
         except Error as e:
             print(e)
 
-maven = MavenFuzzyFactory('root', 'mysqlpassmacrob', 'localhost', 'mavenfuzzyfactory')
+maven = MavenFuzzyFactory('root', input('enter your password: '), 'localhost', 'mavenfuzzyfactory')
 # print(maven.show_database())
 # print(maven.show_all_tables())
 # print(maven.get_utm_content())
