@@ -198,6 +198,54 @@ class MavenFuzzyFactory:
         except Error as e:
             print(e)
 
+    def most_viewed_website_pages(self):
+        try:
+            conn = self.make_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+            SELECT wp.pageview_url,
+                COUNT(DISTINCT wp.website_pageview_id) AS pageviews
+            FROM website_pageviews wp
+            WHERE wp.created_at < '2012-06-09'
+            GROUP BY 1
+            ORDER BY pageviews DESC;''')
+            [print(row) for row in cursor]
+            cursor.close()
+            conn.close()
+        except Error as e:
+            print(e)
+    
+    def identify_top_entry_pages(self):
+        try:
+            conn = self.make_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+            CREATE TEMPORARY TABLE first_pageview_per_session
+            SELECT 
+                website_session_id,
+                MIN(website_pageview_id) AS first_pageview
+            FROM website_pageviews
+            WHERE created_at < '2012-06-12'
+            GROUP BY website_session_id;
+            ''')
+            cursor.execute('''
+            SELECT 
+                wp.pageview_url AS landing_page_url,
+                COUNT(DISTINCT fp.website_session_id) AS sessions_hitting_this_landing_page
+            FROM first_pageview_per_session fp
+                LEFT JOIN 
+                    website_pageviews wp
+                ON fp.first_pageview = wp.website_pageview_id
+            WHERE wp.created_at < '2012-06-12'
+            GROUP BY 1
+            ORDER BY sessions_hitting_this_landing_page DESC;
+           ''')
+            [print(row) for row in cursor]
+            cursor.close()
+            conn.close()
+        except Error as e:
+            print(e)
+
 
 maven = MavenFuzzyFactory('root', input('enter your password: '), 'localhost', 'mavenfuzzyfactory')
 # print(maven.show_database())
@@ -206,4 +254,6 @@ maven = MavenFuzzyFactory('root', input('enter your password: '), 'localhost', '
 # print(maven.calculate_conversion_rate())
 # print(maven.trended_session_volume())
 # print(maven.conversion_rate_by_device_type())
-print(maven.mobile_desktop_weekly_trends())
+# print(maven.mobile_desktop_weekly_trends())
+# print(maven.most_viewed_website_pages())
+print(maven.identify_top_entry_pages())
