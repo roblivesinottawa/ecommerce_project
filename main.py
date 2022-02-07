@@ -169,6 +169,35 @@ class MavenFuzzyFactory:
         except Error as e:
             print(e)
 
+    def mobile_desktop_weekly_trends(self):
+        '''pulls weekly trends for both desktop and mobile to disply impact on volume'''
+        try:
+            conn = self.make_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT
+                    MIN(DATE(created_at)) AS week_start_date,
+                    COUNT(DISTINCT 
+                                CASE WHEN device_type = 'desktop' 
+                                THEN website_session_id 
+                                ELSE NULL END) as desktop_sessions,
+                    COUNT(DISTINCT 
+                                CASE WHEN device_type = 'mobile'
+                                THEN website_session_id
+                                ELSE NULL END) as mobile_sessions
+                FROM website_sessions ws
+                WHERE ws.created_at < '2012-06-09'
+                    AND ws.created_at > '2012-04-15'
+                    AND utm_source = 'gsearch'
+                    AND utm_campaign = 'nonbrand'
+                GROUP BY YEAR(created_at), WEEK(created_at);
+            ''')
+            [print(row) for row in cursor]
+            cursor.close()
+            conn.close()
+        except Error as e:
+            print(e)
+
 
 maven = MavenFuzzyFactory('root', input('enter your password: '), 'localhost', 'mavenfuzzyfactory')
 # print(maven.show_database())
@@ -176,4 +205,5 @@ maven = MavenFuzzyFactory('root', input('enter your password: '), 'localhost', '
 # print(maven.get_utm_content())
 # print(maven.calculate_conversion_rate())
 # print(maven.trended_session_volume())
-print(maven.conversion_rate_by_device_type())
+# print(maven.conversion_rate_by_device_type())
+print(maven.mobile_desktop_weekly_trends())
