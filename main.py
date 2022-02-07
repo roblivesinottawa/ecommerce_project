@@ -117,9 +117,33 @@ class MavenFuzzyFactory:
             conn.close()
         except Error as e:
             print(e)
+    
+    def trended_session_volume(self):
+        '''pulls gsearch  nonbranded trended session volume by week'''
+        try:
+            conn = self.make_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+            SELECT 
+                MIN(DATE(created_at)) As week_started_at,
+                COUNT(DISTINCT website_session_id) AS sessions
+            FROM website_sessions
+            WHERE created_at < '2012-05-10'
+            AND UTM_SOURCE = 'gsearch'
+            AND utm_campaign = 'nonbrand'
+            GROUP BY
+                YEAR(created_at), WEEK(created_at);
+            ''')
+            [print(row) for row in cursor]
+            cursor.close()
+            conn.close()
+        except Error as e:
+            print(e)
+
 
 maven = MavenFuzzyFactory('root', input('enter your password: '), 'localhost', 'mavenfuzzyfactory')
 # print(maven.show_database())
 # print(maven.show_all_tables())
 # print(maven.get_utm_content())
-print(maven.calculate_conversion_rate())
+# print(maven.calculate_conversion_rate())
+print(maven.trended_session_volume())
