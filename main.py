@@ -140,10 +140,40 @@ class MavenFuzzyFactory:
         except Error as e:
             print(e)
 
+    def conversion_rate_by_device_type(self):
+        '''pulls the conversion rate from session to order by device type'''
+        try:
+            conn = self.make_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+            SELECT
+                ws.device_type,
+                COUNT(DISTINCT ws.website_session_id) AS sessions,
+                COUNT(DISTINCT o.order_id) AS orders,
+                COUNT(DISTINCT o.order_id) / COUNT(DISTINCT ws.website_session_id) AS conversion_rate
+            FROM
+                website_sessions ws
+            LEFT JOIN 
+                orders o
+            ON
+                o.website_session_id = ws.website_session_id
+            WHERE 
+                ws.created_at < '2012-05-11'
+            AND utm_source = 'gsearch'
+            AND utm_campaign = 'nonbrand'
+            GROUP BY 1;
+            ''')
+            [print(row) for row in cursor]
+            cursor.close()
+            conn.close()
+        except Error as e:
+            print(e)
+
 
 maven = MavenFuzzyFactory('root', input('enter your password: '), 'localhost', 'mavenfuzzyfactory')
 # print(maven.show_database())
 # print(maven.show_all_tables())
 # print(maven.get_utm_content())
 # print(maven.calculate_conversion_rate())
-print(maven.trended_session_volume())
+# print(maven.trended_session_volume())
+print(maven.conversion_rate_by_device_type())
